@@ -16,27 +16,26 @@
 #														of (human, anolis, latimeria, xenopus) and missing in both gallus and taeniopygia)
 #
 # ###########
-# Thomas in't Veld, University of Leuven (last edit 20140825)
+# Thomas in't Veld, University of Leuven (last edit 20141101)
 # ###########
 
 
 
 
-THRESHOLD <- 40
-NROFCORES <- 8
+THRESHOLD <- 45
+NROFCORES <- 4
 logFile <- 'logFile.log'
 LOGFILE <- logFile
 library(snow)
 
+load('../data/genelists/genelist.RData')
 
 
 do.all <- function(){
 	zz <- file(logFile, open="wt")
 	sink(zz)
 	sink(zz, type='message')
-	print(paste('beginning analysis on five cores', Sys.time()))
-
-	info <<- bindOneBigInfoFile()
+	print(paste('beginning analysis', Sys.time()))
 
 	species <- c('gallus', 'anolis', 'taeniopygia', 'latimeria', 'xenopus')
 	
@@ -44,7 +43,7 @@ do.all <- function(){
 
 	print(paste('done with primary analysis. Starting interpretation phase.', Sys.time()))
 
-	interpretations <- clusterApplyLB(cl, species, function(specie) interpretframes(specie))
+	interpretations <- lapply(species, function(specie) interpretframes(specie))
 
 	print(paste('done with interpretation phase. Tieing all together now.', Sys.time()))
 
@@ -60,69 +59,44 @@ analysisPerSpeciesParallel <- function(species){
 	
 	write(paste('Starting with', species, 'at', Sys.time()), file=LOGFILE, append=FALSE)
 	
-	filename1 <- paste('homoon',species, '/outputMissingLong.RData',sep='')
-	filename2 <- paste(species, 'onhomo/outputMissingLong.RData', sep='')
+	filename1 <- paste('../data/results_blast/outputBlast_', species, '_homo.RData', sep='')
+	filename2 <- paste('../data/results_blast/outputBlast_homo_', species, '.RData', sep='')
+
+	#filename1 <- paste('homoon',species, '/outputMissingLong.RData',sep='')
+	#filename2 <- paste(species, 'onhomo/outputMissingLong.RData', sep='')
 	
+	# load in these datasets, they both have variable name 'result' so pass them on to different names (df1 and df2)
 	load(filename1)
+	df1 <- result
+	df1$ENSID_REF <- as.character(df1$ENSID_REF)
+	df1$ENSID_FOUND <- as.character(df1$ENSID_FOUND)
+
 	load(filename2)	
-	
+	df2 <- result
+	df2$ENSID_REF <- as.character(df2$ENSID_REF)
+	df2$ENSID_FOUND <- as.character(df2$ENSID_FOUND)
+
 	ensids <- unique(df1$ENSID_REF)
 
 	# for testing:
-	# ensids <- sample(ensids, 200)
+	# ensids <- sample(ensids, 10)
 
 	cl <- makeCluster(NROFCORES)
 	clusterExport(cl, c('analysisPerSpecies', 'THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
 	dfResultTwoWay <- clusterApply(cl, ensids, function(ensid) return(checkMatchInBothFrames(ensid, df1, df2)))
 	stopCluster(cl)
-	save(dfResultTwoWay, file='tempResultParallelRun.Rdata')
+	save(dfResultTwoWay, file=paste(species, '_tempResultParallelRun.Rdata', sep=''))
 		
 	dfResultTwoWay <- do.call('c', dfResultTwoWay)
 		
 	result <- data.frame(ENSID_REF=ensids, MISSING=dfResultTwoWay)
-	write.csv(result, paste(filename1, 'twoway.csv', sep=''), row.names=FALSE)
+	save(result, file=paste('../data/results_byprotein/result', species, '.RData', sep=''))
+	#write.csv(result, paste(filename1, 'twoway.csv', sep=''), row.names=FALSE)
 
 	return(result)
 
 }
 
-save.old.csvs.RData <- function(species){
-	
-	filename1 <- paste('homoon',species, '/outputMissingLong.csv',sep='')
-	filename2 <- paste(species, 'onhomo/outputMissingLong.csv', sep='')
-	
-	filename1R <- paste('homoon',species, '/outputMissingLong.RData',sep='')
-	filename2R <- paste(species, 'onhomo/outputMissingLong.RData', sep='')
-	
-	df1 <- read.csv(filename1, stringsAsFactors=FALSE)
-	df2 <- read.csv(filename2, stringsAsFactors=FALSE)
-	
-	save(df1, file=filename1R)
-	save(df2, file=filename2R)
-	
-
-}
-
-analysisPerSpecies <- function(species){
-	filename1 <- paste('homoon',species, '/outputMissingLong.csv',sep='')
-	filename2 <- paste(species, 'onhomo/outputMissingLong.csv', sep='')
-
-	df1 <- read.csv(filename1, stringsAsFactors=FALSE)
-	df2 <- read.csv(filename2, stringsAsFactors=FALSE)
-
-	ensids <- unique(df1$ENSID_REF)
-
-	# for testing:
-	# ensids <- sample(ensids, 200)
-
-	dfResultTwoWay <- sapply(ensids, function(ensid) return(checkMatchInBothFrames(ensid, df1, df2)))
-
-	result <- data.frame(ENSID_REF=ensids, MISSING=dfResultTwoWay)
-	write.csv(result, paste(filename1, 'twoway.csv', sep=''), row.names=FALSE)
-
-	return(result)
-
-}
 
 checkMatchInBothFrames <- function(ensid, df1, df2){
 	
@@ -184,53 +158,6 @@ checkMatchInBothFrames <- function(ensid, df1, df2){
 
 }
 
-# checkMatchInThisFrame <- function(ensid, df){
-
-# 	matches <- df[df$ENSID_REF==ensid, ]
-
-# 	if(dim(matches)[[1]]<1){
-# 		return(TRUE)
-# 	}
-
-# 	if(max(matches$IDENTITY)>THRESHOLD){
-# 		return(FALSE)
-# 	}else{
-# 		return(TRUE)
-# 	}
-
-	
-
-# }
-
-# checkMatchInOtherFrame <- function(ensid, df){
-
-# 	matches <- df[df$ENSID_FOUND==ensid, ]
-
-# 	if(dim(matches)[[1]]<1){
-# 		return(TRUE)
-# 	}
-
-# 	if(max(matches$IDENTITY)>THRESHOLD){
-# 		return(FALSE)
-# 	}else{
-# 		return(TRUE)
-# 	}
-
-	
-
-# }
-
-
-	# Obsolete: old way of calculating twoway analysis
-	# # generate missing boolean one way
-	# dfResult1 <- sapply(ensids, function(ensid) return(checkMatchInThisFrame(ensid, df1)))
-	# # generate missing boolean the other way
-	# dfResult2 <- sapply(ensids, function(ensid) return(checkMatchInOtherFrame(ensid, df2)))
-	# result <- data.frame(ENSID_REF=ensids, MISSINGLEFT=dfResult1, MISSINGRIGHT=dfResult2)
-	# how to verify it's the same gene when present?
-	# result['MISSING'] <- ( result$MISSINGLEFT & result$MISSINGRIGHT ) # this is just boolean! need to verify same gene
-	
-
 log.step <- function(msg){
 
 	write(paste(msg, 'at', Sys.time()), file=LOGFILE, append=TRUE)	
@@ -238,10 +165,15 @@ log.step <- function(msg){
 }
 
 interpretframes <- function(species){
-	filename <- paste('homoon',species, '/outputMissingLong.csvtwoway.csv',sep='')
-	infohomo <- read.csv('../info/infohomo.csv', stringsAsFactors=FALSE)
 
-	df <- read.csv(filename, stringsAsFactors=FALSE)
+	# get operated list of proteins per species
+	filename <- paste('../data/results_byprotein/result', species, '.RData', sep='')
+	load(filename)
+	df <- result
+
+	# we're using human proteins as reference, so get the links between genes and proteins for homo
+	load('../data/genelists/infohomo.RData')
+	infohomo <- infosubject
 
 	mergedbig <- merge(df, infohomo, by.x='ENSID_REF', by.y='Ensembl.Protein.ID', all.x=FALSE, all.y=FALSE)
 
@@ -255,36 +187,13 @@ interpretframes <- function(species){
 
 	result <- data.frame(Ensembl.Gene.ID=ensgids, Missing=splicesResult)
 
-	write.csv(result, paste(species, 'ResultTwoway.csv', sep=''), row.names=FALSE)
+	save(result, file=paste('../data/results_bygene/', species, '_bygene.RData', sep=''))
 
 	return(result)
 
 }
 
 
-interpretframes_oneway <- function(species){
-	filename <- paste('homoon',species, '/outputMissing.csvtwoway.csv',sep='')
-	infohomo <- read.csv('../info/infohomo.csv', stringsAsFactors=FALSE)
-
-	df <- read.csv(filename, stringsAsFactors=FALSE)
-
-	mergedbig <- merge(df, infohomo, by.x='ENSID_REF', by.y='Ensembl.Protein.ID', all.x=FALSE, all.y=FALSE)
-
-	mergedbig <- unique(mergedbig)
-
-	# Ensembl.Gene.ID is the unique identifier that we have to attain
-
-	ensgids <- unique(mergedbig$Ensembl.Gene.ID) # ~ 20k size, down from 100k
-
-	splicesResult <- testAllSplicesForMissing_oneway(mergedbig, ensgids)
-
-	result <- data.frame(Ensembl.Gene.ID=ensgids, Twoway.Missing=splicesResult)
-
-	write.csv(result, paste(species, 'ResultTwoway.csv', sep=''), row.names=FALSE)
-
-	return(TRUE)
-
-}
 
 runner <- function(){
 
@@ -354,18 +263,28 @@ getSplicesFromOneGeneID <- function(df, gene){
 
 tieAllTogether <- function(){
 
-	file1 <- 'anolisResultTwoway.csv'
-	file2 <- 'xenopusResultTwoway.csv'
-	file3 <- 'gallusResultTwoway.csv'
-	file4 <- 'latimeriaResultTwoway.csv'
-	file5 <- 'taeniopygiaResultTwoway.csv'
+	species1 <- 'anolis'
+	species2 <- 'xenopus'
+	species3 <- 'gallus'
+	species4 <- 'latimeria'
+	species5 <- 'taeniopygia'
 
-	df1 <- read.csv(file1, stringsAsFactors=FALSE)
-	df2 <- read.csv(file2, stringsAsFactors=FALSE)
-	df3 <- read.csv(file3, stringsAsFactors=FALSE)
-	df4 <- read.csv(file4, stringsAsFactors=FALSE)
-	df5 <- read.csv(file5, stringsAsFactors=FALSE)
+	file1 <- paste('../data/results_bygene/', species1, '_bygene.RData', sep='')
+	file2 <- paste('../data/results_bygene/', species2, '_bygene.RData', sep='')
+	file3 <- paste('../data/results_bygene/', species3, '_bygene.RData', sep='')
+	file4 <- paste('../data/results_bygene/', species4, '_bygene.RData', sep='')
+	file5 <- paste('../data/results_bygene/', species5, '_bygene.RData', sep='')
 
+	load(file1)
+	df1 <- result
+	load(file2)
+	df2 <- result
+	load(file3)
+	df3 <- result
+	load(file4)
+	df4 <- result
+	load(file5)
+	df5 <- result
 
 	colnames(df1)[2] <- 'anolis'
 	colnames(df2)[2] <- 'xenopus'
@@ -387,41 +306,15 @@ tieAllTogether <- function(){
 
 	df['missing'] <- (df$missing1 | df$missing2 | df$missing3 | df$missing4)
 
-	fileOut <- paste('resultTwoWayThreshold', THRESHOLD, Sys.time(), '.csv', sep='')
+	result <- df
 
-	write.csv(df, fileOut, row.names=FALSE)
+	fileOut <- paste('../data/results_merged/result_', THRESHOLD, '_', Sys.Date(), '.RData', sep='')
+
+	save(result, file=fileOut)
 
 }
 
 ##### HELPERS
-
-bindOneBigInfoFile <- function(){
-	df1 <- normaliseInfoFile(read.csv('../info/infogallus.csv', stringsAsFactors=FALSE))
-	df2 <- normaliseInfoFile(read.csv('../info/infoanolis.csv', stringsAsFactors=FALSE))
-	df3 <- normaliseInfoFile(read.csv('../info/infolatimeria.csv', stringsAsFactors=FALSE))
-	df4 <- normaliseInfoFile(read.csv('../info/infoxenopus.csv', stringsAsFactors=FALSE))
-	df5 <- normaliseInfoFile(read.csv('../info/infotaeniopygia.csv', stringsAsFactors=FALSE))
-	df6 <- normaliseInfoFile(read.csv('../info/infohomo.csv', stringsAsFactors=FALSE))
-
-	df <- rbind(df1, df2, df3, df4, df5, df6)
-
-	return(df)
-
-}	
-
-normaliseInfoFile <- function(df){
-
-	result <- data.frame(
-		Ensembl.Gene.ID=df$Ensembl.Gene.ID,
-		Ensembl.Protein.ID=df$Ensembl.Protein.ID,
-		Chromosome.Name=df$Chromosome.Name,
-		Gene.Start..bp.=df$Gene.Start..bp.,
-		Gene.End..bp.=df$Gene.End..bp.,
-		Associated.Gene.Name=df$Associated.Gene.Name,
-		stringsAsFactors=FALSE
-		)
-	return(result)
-}
 
 proteinDictionary <- function(enspid){
 
