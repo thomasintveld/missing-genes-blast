@@ -79,7 +79,7 @@ analysisPerSpeciesParallel <- function(species){
 	ensids <- unique(df1$ENSID_REF)
 
 	# for testing:
-	# ensids <- sample(ensids, 10)
+	ensids <- ensids[100:120]
 
 	cl <- makeCluster(NROFCORES)
 	clusterExport(cl, c('analysisPerSpecies', 'THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
