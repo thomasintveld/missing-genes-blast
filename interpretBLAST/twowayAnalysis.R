@@ -82,7 +82,7 @@ analysisPerSpeciesParallel <- function(species){
 	ensids <- ensids[100:120]
 
 	cl <- makeCluster(NROFCORES)
-	clusterExport(cl, c('analysisPerSpecies', 'THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
+	clusterExport(cl, c('THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
 	dfResultTwoWay <- clusterApply(cl, ensids, function(ensid) return(checkMatchInBothFrames(ensid, df1, df2)))
 	stopCluster(cl)
 	save(dfResultTwoWay, file=paste(species, '_tempResultParallelRun.Rdata', sep=''))
