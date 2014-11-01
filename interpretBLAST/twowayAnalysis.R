@@ -24,6 +24,7 @@
 
 THRESHOLD <- 45
 NROFCORES <- 4
+DEBUG <- FALSE
 logFile <- 'logFile.log'
 LOGFILE <- logFile
 library(snow)
@@ -79,7 +80,9 @@ analysisPerSpeciesParallel <- function(species){
 	ensids <- unique(df1$ENSID_REF)
 
 	# for testing:
-	ensids <- ensids[100:120]
+	if(DEBUG){
+		ensids <- sample(ensids, 20)
+	}
 
 	cl <- makeCluster(NROFCORES)
 	clusterExport(cl, c('THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
