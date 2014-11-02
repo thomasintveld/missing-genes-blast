@@ -20,7 +20,7 @@ Thomas in't Veld (KU Leuven, November 2014).
 
 Contributors:
 =============
-Frans Schuit
-Stefanie De Coster
-Lieven Thorrez
+- Frans Schuit
+- Stefanie De Coster
+- Lieven Thorrez
 
