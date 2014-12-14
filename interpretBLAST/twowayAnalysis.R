@@ -23,7 +23,7 @@
 
 
 THRESHOLD <- 50
-NROFCORES <- 4
+NROFCORES <- 8
 DEBUG <- FALSE
 logFile <- 'logFile.log'
 LOGFILE <- logFile
@@ -77,6 +77,10 @@ analysisPerSpeciesParallel <- function(species){
 	df2$ENSID_REF <- as.character(df2$ENSID_REF)
 	df2$ENSID_FOUND <- as.character(df2$ENSID_FOUND)
 
+  # remove items from df1 and df2 that have too low scores
+  df1 <- df1[df1$IDENTITY>=THRESHOLD,]
+	df2 <- df2[df2$IDENTITY>=THRESHOLD,]
+  
 	ensids <- unique(df1$ENSID_REF)
 
 	# for testing:
