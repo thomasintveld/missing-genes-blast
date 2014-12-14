@@ -22,7 +22,7 @@
 
 
 
-THRESHOLD <- 45
+THRESHOLD <- 50
 NROFCORES <- 4
 DEBUG <- FALSE
 logFile <- 'logFile.log'
@@ -120,10 +120,13 @@ checkMatchInBothFrames <- function(ensid, df1, df2){
 			return(TRUE)
 		}
 	
-	# keep only the matchLeft with the largest identity score
-	maximumLeft <- max(matchesLeft$IDENTITY)
-	matchesLeft <- matchesLeft[matchesLeft$IDENTITY==maximumLeft,]
-	matchLeft <- matchesLeft$ENSID_FOUND
+  # significant edit 20141214: instead of taking max score from results list, we take the first entry — results 
+  # are sorted by *query-match*, not by identity score. So the largest identy score is not necessarily the best hit! 
+  
+	# keep only the first matchLeft
+	# maximumLeft <- max(matchesLeft$IDENTITY)
+	# matchesLeft <- matchesLeft[matchesLeft$IDENTITY==maximumLeft,]
+	matchLeft <- matchesLeft$ENSID_FOUND[1]
 			
 	# 2/ check if we find the same geneids if we perform the reverse search 
 	matchesRight <- df2[df2$ENSID_REF==matchLeft, ]
@@ -139,10 +142,10 @@ checkMatchInBothFrames <- function(ensid, df1, df2){
 			return(TRUE)
 		}
 		
-	# keep only the matchRight with the largest identity score
-	maximumRight <- max(matchesRight$IDENTITY)
-	matchesRight <- matchesRight[matchesRight$IDENTITY==maximumRight,]	
-	matchRight <- matchesRight$ENSID_FOUND
+	# keep only the first matchRight
+	# maximumRight <- max(matchesRight$IDENTITY)
+	# matchesRight <- matchesRight[matchesRight$IDENTITY==maximumRight,]	
+	matchRight <- matchesRight$ENSID_FOUND[1]
 
 	# get all the geneids from initial and found proteinid's (for geneidRight we might have multiple matches with same id)
 	geneidLeft <- proteinDictionary(ensid)
