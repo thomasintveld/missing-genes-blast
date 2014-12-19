@@ -23,7 +23,7 @@
 
 
 THRESHOLD <- 50
-NROFCORES <- 8
+NROFCORES <- 5
 DEBUG <- FALSE
 logFile <- 'logFile.log'
 LOGFILE <- logFile
@@ -39,9 +39,14 @@ do.all <- function(){
 	print(paste('beginning analysis', Sys.time()))
 
 	species <- c('gallus', 'anolis', 'taeniopygia', 'latimeria', 'xenopus')
+		
+	cl <- makeCluster(NROFCORES)	
+	clusterExport(cl, c('DEBUG', 'THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE', 'analysisPerSpeciesParallel' ))
+		
+	operations <- clusterApplyLB(cl, species, function(specie) analysisPerSpeciesParallel(specie))
 	
-	operations <- sapply(species, function(specie) analysisPerSpeciesParallel(specie))
-
+	stopCluster(cl)
+	
 	print(paste('done with primary analysis. Starting interpretation phase.', Sys.time()))
 
 	interpretations <- lapply(species, function(specie) interpretframes(specie))
@@ -53,12 +58,16 @@ do.all <- function(){
 	print(paste('All done at', Sys.time()))
 	sink(type='message')
 	sink()
+	
+	
 
 }
 
 analysisPerSpeciesParallel <- function(species){
 	
-	write(paste('Starting with', species, 'at', Sys.time()), file=LOGFILE, append=FALSE)
+	logz <- paste(species,'.', LOGFILE, sep='')
+	
+	write(paste('Starting with', species, 'at', Sys.time()), file=logz, append=FALSE)
 	
 	filename1 <- paste('../data/results_blast/outputBlast_', species, '_homo.RData', sep='')
 	filename2 <- paste('../data/results_blast/outputBlast_homo_', species, '.RData', sep='')
@@ -88,10 +97,10 @@ analysisPerSpeciesParallel <- function(species){
 		ensids <- sample(ensids, 20)
 	}
 
-	cl <- makeCluster(NROFCORES)
-	clusterExport(cl, c('THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
-	dfResultTwoWay <- clusterApply(cl, ensids, function(ensid) return(checkMatchInBothFrames(ensid, df1, df2)))
-	stopCluster(cl)
+	#cl <- makeCluster(NROFCORES)
+	#clusterExport(cl, c('THRESHOLD', 'interpretframes', 'testAllSplicesForMissing', 'testSpliceForMissing', 'getSplicesFromOneGeneID', 'checkMatchInBothFrames', 'info', 'proteinDictionary', 'log.step', 'LOGFILE' ))
+	dfResultTwoWay <- sapply(ensids, function(ensid) return(checkMatchInBothFrames(ensid, df1, df2, species)))
+	#stopCluster(cl)
 	save(dfResultTwoWay, file=paste(species, '_tempResultParallelRun.Rdata', sep=''))
 		
 	dfResultTwoWay <- do.call('c', dfResultTwoWay)
@@ -105,10 +114,10 @@ analysisPerSpeciesParallel <- function(species){
 }
 
 
-checkMatchInBothFrames <- function(ensid, df1, df2){
+checkMatchInBothFrames <- function(ensid, df1, df2, species){
 	
 	# log this step
-	log.step(ensid)
+	log.step(ensid, species)
 	
 	# 1/ check corresponding ensid in other frame
 	matchesLeft <- df1[df1$ENSID_REF==ensid,]
@@ -168,9 +177,11 @@ checkMatchInBothFrames <- function(ensid, df1, df2){
 
 }
 
-log.step <- function(msg){
+log.step <- function(msg, species){
+	
+		logz <- paste(species,'.', LOGFILE, sep='')
 
-	write(paste(msg, 'at', Sys.time()), file=LOGFILE, append=TRUE)	
+	write(paste(msg, 'at', Sys.time()), file=logz, append=TRUE)	
 
 }
 
