@@ -56,9 +56,14 @@ do.all <- function(){
 	tieAllTogether()
 
 	print(paste('All done at', Sys.time()))
+	print(paste('going down for shutdown in 10 minutes', Sys.time()))
 	sink(type='message')
 	sink()
 	
+	# shutdown mac
+	print(paste('going down for shutdown in 10 minutes', Sys.time()))
+	system('sudo shutdown -h +m')
+	system('sudo shutdown -h +1')
 	
 
 }
@@ -94,7 +99,7 @@ analysisPerSpeciesParallel <- function(species){
 
 	# for testing:
 	if(DEBUG){
-		ensids <- sample(ensids, 20)
+		ensids <- sample(ensids, 5)
 	}
 
 	#cl <- makeCluster(NROFCORES)
@@ -103,12 +108,13 @@ analysisPerSpeciesParallel <- function(species){
 	#stopCluster(cl)
 	save(dfResultTwoWay, file=paste(species, '_tempResultParallelRun.Rdata', sep=''))
 		
-	dfResultTwoWay <- do.call('c', dfResultTwoWay)
+	#dfResultTwoWay <- do.call('c', dfResultTwoWay)
 		
 	result <- data.frame(ENSID_REF=ensids, MISSING=dfResultTwoWay)
 	save(result, file=paste('../data/results_byprotein/result', species, '.RData', sep=''))
 	#write.csv(result, paste(filename1, 'twoway.csv', sep=''), row.names=FALSE)
-
+	
+	#result <- as.list(result)
 	return(result)
 
 }
@@ -162,6 +168,8 @@ checkMatchInBothFrames <- function(ensid, df1, df2, species){
 
 	# get all the geneids from initial and found proteinid's (for geneidRight we might have multiple matches with same id)
 	geneidLeft <- proteinDictionary(ensid)
+	# sometimes duplicates
+	geneidLeft <- geneidLeft[1]
 	geneidRight <- sapply(matchRight, function(match) return(proteinDictionary(match)))
 
 
