@@ -56,11 +56,16 @@ do.all <- function(){
 	tieAllTogether()
 
 	print(paste('All done at', Sys.time()))
+<<<<<<< HEAD
 	print(paste('going down for shutdown in 60 minutes', Sys.time()))
+=======
+	print(paste('going down for shutdown in 10 minutes', Sys.time()))
+>>>>>>> 9884e15057b0b625841e39a399cf077ec6856e36
 	sink(type='message')
 	sink()
 	
 	# shutdown mac
+<<<<<<< HEAD
 	print(paste('going down for shutdown in 60 minutes', Sys.time()))
 	system('sudo shutdown -h +m')
 	system('sudo shutdown -h +60')
@@ -79,6 +84,12 @@ species <- c('gallus', 'anolis', 'taeniopygia', 'latimeria', 'xenopus')
 	tieAllTogether()
 
 	print(paste('All done at', Sys.time()))
+=======
+	print(paste('going down for shutdown in 10 minutes', Sys.time()))
+	system('sudo shutdown -h +m')
+	system('sudo shutdown -h +1')
+	
+>>>>>>> 9884e15057b0b625841e39a399cf077ec6856e36
 
 }
 
