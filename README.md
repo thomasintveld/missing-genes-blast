@@ -14,7 +14,7 @@ The relevant protein FASTA files can be downloaded from [Ensembl](http://www.ens
 * [xenopus tropicalis](http://ftp.ensembl.org/pub/release-75/fasta/xenopus_tropicalis/pep/Xenopus_tropicalis.JGI_4.2.75.pep.all.fa.gz) (frog, release 75)
 * [latimeria](http://ftp.ensembl.org/pub/release-75/fasta/latimeria_chalumnae/pep/Latimeria_chalumnae.LatCha1.75.pep.all.fa.gz) (coelacanth fish, release 75)
 
-* Get the needed FASTA files from ncbi (protein files) for the six species, put them in the data/fasta folder and make sure the locations are linked correctly in the autoBLAST.R scripts. 
+Get these needed FASTA files from ncbi (protein files) for the six species, put them in the data/fasta folder and make sure the locations are linked correctly in the autoBLAST.R scripts. 
 
 Apart from that, everything should be automised: 
 * First run the 10 (5 species both ways) autoBLAST.R scripts. These generate full lists of found/not found proteins in the reciprocal species, and put them in the data/results_blast folder.
